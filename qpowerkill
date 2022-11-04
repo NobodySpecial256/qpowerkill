@@ -49,7 +49,7 @@ if log_file != None and log_file != "":
 
 def panic(device, state):
 	if log != None:
-		write(log, "%s\nqpowerkill: triggered panic @ %s\n[trigger]\n\tdevice: %s\n\tstate:%s\n\n" %("-" * 64, datetime.now().isoformat(), device.decode(), state.decode()))
+		write(log, "%s\nqpowerkill: triggered panic @ %s\n[trigger]\n\tdevice: %s\n\tstate:%s\n\n" %("-" * 64, datetime.now().isoformat(), device.decode(encoding="ascii", errors="replace"), state.decode(encoding="ascii", errors="replace")))
 	if do_sync:
 		sync()
 		write(log, "-- Synced --\n")

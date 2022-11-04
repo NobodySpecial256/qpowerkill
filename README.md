@@ -4,7 +4,7 @@ A script to shutdown a system on power events. This is useful, for example, to t
 
 **WARNING:** This script has no way to differentiate being unplugged from an innocent loss of power. An unexpected temporary loss of power can result in data loss. Therefore, it's recommended to avoid using destructive panic actions. The script syncs data to disk by default, but cannot save your documents for you. Unsaved data *will* be lost
 
-These scripts were designed to run on Qubes inside dom0, but should work on most Linux-based OSs
+This script was designed to run on Qubes inside dom0, but should work on most Linux-based OSs
 
 Installation is as follows:
 

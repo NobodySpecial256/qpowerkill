@@ -99,6 +99,7 @@ except KeyboardInterrupt:
 except SystemExit:
 	print("Caught exit signal, quitting...")
 except e:
+	p.terminate()
 	raise e
 p.terminate()
 if log != None:

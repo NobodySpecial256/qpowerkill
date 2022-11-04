@@ -54,19 +54,19 @@ def panic(device, state):
 		sync()
 		write(log, "-- Synced --\n")
 	run(panic_command)
-
-n = None
-try:
+def process(devices, powermon_cmd, should_panic):
 	p = Popen(powermon_cmd, stdout=PIPE, stderr=PIPE)
-	print("Monitoring power status changes...")
-	devices = {}
 	device = None
-	panic_state = None
 	for line in p.stdout:
 		do_panic = False
+		panic_state = None
 		if b"\tdevice changed:" in line:
 			device = line.split(b"\tdevice changed:")[1].strip()
+		elif b"Device:" in line:
+			device = line.split(b"Device:")[1].strip()
 		elif b"\tdaemon changed:" in line:
+			device = b" (power manager)"
+		elif b"Daemon:" in line:
 			device = b" (power manager)"
 		elif b"on-battery:" in line:
 			on_battery = b"yes\n" == line.split(b" ")[-1]
@@ -93,12 +93,28 @@ try:
 				devices[device] = {}
 			devices[device]["online"] = online
 		if do_panic:
-			panic(device, panic_state)
+			if should_panic:
+				print("[Panic] Device changed: [%s] %s" %(device, panic_state))
+				panic(device, panic_state)
+			else:
+				print("Device changed: [%s] %s" %(device, panic_state))
+	return device
+
+n = None
+p = None
+try:
+	print("Monitoring power status changes...")
+	devices = {}
+	panic_state = None
+	print("Collecting devices...")
+	process(devices, ["/usr/bin/upower", "-d"], False)
+	print("Collected devices. Monitoring for changes...")
+	process(devices, powermon_cmd, True)
 except KeyboardInterrupt:
 	print("Caught ctrl+c, quitting...")
 except SystemExit:
 	print("Caught exit signal, quitting...")
-except e:
+except Exception as e:
 	p.terminate()
 	raise e
 p.terminate()

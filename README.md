@@ -6,28 +6,27 @@ A script to shutdown a system on power events. This is useful, for example, to t
 
 Installation is as follows:
 
-- Copy `qusbkill`, `qusbkill.service`, and `uk` into dom0
-- Copy/move `qusbkill` into `/usr/bin` and mark it as executable
-- Copy/move `qusbkill.service` into `/etc/systemd/system`
-- Copy/move `uk` into `/usr/bin` and mark it executable
-  - `uk` is a helper script to disable/re-enable qusbkill without typing a long systemctl command
-- Run `systemctl enable qusbkill` to make qusbkill start at boot
-- After qusbkill is set to start at boot, run `systemctl start qusbkill` to start qusbkill immediately
+- Copy `qpowerkill`, `qpowerkill.service`, and `pk` into dom0
+- Copy/move `qpowerkill` into `/usr/bin` and mark it as executable
+- Copy/move `qpowerkill.service` into `/etc/systemd/system`
+- Copy/move `pk` into `/usr/bin` and mark it executable
+  - `pk` is a helper script to disable/re-enable qpowerkill without typing a long systemctl command
+- Run `systemctl enable qpowerkill` to make qpowerkill start at boot
+- After qpowerkill is set to start at boot, run `systemctl start qpowerkill` to start qpowerkill immediately
 
 This will enable the service at boot, and start the service
-To insert or remove a USB device without causing dom0 to power off, temporarily stop the service with `systemctl stop qusbkill` or use the provided helper script `uk`, then restart it after the device is inserted/removed
-It doesn't require any changes to be made to sys-usb in order to work
+To attach or detatch your charger/power adapter without causing dom0 to power off, temporarily stop the service with `systemctl stop qpowerkill` or use the provided helper script `pk`, then restart it after the power adapter is attached or removed
 
-### Using the `uk` helper script
+### Using the `pk` helper script
 
-`uk` is effectively just an alias for `systemctl <start/stop/restart/status> qusbkill`. The major benefit is it's shorter
+`pk` is effectively just an alias for `systemctl <start/stop/restart/status> qpowerkill`. The major benefit is it's shorter
 
-- To start qusbkill, run `uk start`
-- To stop qusbkill, run `uk stop`
-- To check if qusbkill is running, run `qucbkill status`
-- To view qusbkill's logs, run `uk log`
-- To delete qusbkill's logs, run `uk rm-log`
-- You can also queue multiple commands. For example, `qusbkill start status` will start qusbkill, then show the status to make sure it's actually running
+- To start qpowerkill, run `pk start`
+- To stop qpowerkill, run `pk stop`
+- To check if qpowerkill is running, run `pk status`
+- To view qpowerkill's logs, run `pk log`
+- To delete qpowerkill's logs, run `pk rm-log`
+- You can also queue multiple commands. For example, `pk start status` will start qpowerkill, then show the status to make sure it's actually running
 
 ### How to copy files to dom0
 

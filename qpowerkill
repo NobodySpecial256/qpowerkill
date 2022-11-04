@@ -1,0 +1,106 @@
+#!/usr/bin/env python3
+
+from datetime import datetime
+from string import printable
+from subprocess import Popen
+from subprocess import PIPE
+from subprocess import run
+from difflib import ndiff
+from os import geteuid
+from time import sleep
+from sys import stdout
+from sys import argv
+from os import fsync
+from os import sync
+
+# The panic command to trigger when a device change is detected
+panic_command = ["/usr/sbin/poweroff", "-p", "-f"] # Force immediate poweroff
+
+# Write logs to this file. Useful for knowing whether a power panic was triggered
+# vs whether your device shutdown for some other reason (kernel panic? crash?)
+log_file = "/var/log/qpowerkill.log" # Set to None or "" to disable logging
+
+# Sync disk before poweroff? This can potentially prevent data loss
+# Although unsaved data will still be lost
+# If this script is set to write logs, the log will be synced even if this is False
+do_sync = True
+
+if geteuid() != 0:
+	run(["sudo"] + argv)
+	raise SystemExit
+
+# The command to use to query USB devices. Do not change this unless you know what you're doing
+powermon_cmd = ["/usr/bin/upower", "--monitor-detail"] # | grep -E "(on-battery:|lid-is-closed:|device changed:|state:)"
+
+def clean(string):
+	return ''.join([c for c in string if c in printable])
+def write(f, w):
+	f.write(w)
+	stdout.write(w)
+	f.flush()
+	fsync(f)
+def diff(a, b):
+	return ''.join([c[2] for c in ndiff(a, b) if c[0] != " "])
+
+log = None
+if log_file != None and log_file != "":
+	log = open(log_file, "a")
+	write(log, "qpowerkill: starting @ %s\n" %(datetime.now().isoformat()))
+
+def panic(device, state):
+	if log != None:
+		write(log, "%s\nqpowerkill: triggered panic @ %s\n[trigger]\n\tdevice: %s\n\tstate:%s\n\n" %("-" * 64, datetime.now().isoformat(), device.decode(), state.decode()))
+	if do_sync:
+		sync()
+		write(log, "-- Synced --\n")
+	run(panic_command)
+
+n = None
+try:
+	p = Popen(powermon_cmd, stdout=PIPE, stderr=PIPE)
+	print("Monitoring power status changes...")
+	devices = {}
+	device = None
+	panic_state = None
+	for line in p.stdout:
+		do_panic = False
+		if b"\tdevice changed:" in line:
+			device = line.split(b"\tdevice changed:")[1].strip()
+		elif b"\tdaemon changed:" in line:
+			device = b" (power manager)"
+		elif b"on-battery:" in line:
+			on_battery = b"yes\n" == line.split(b" ")[-1]
+			if device not in devices or "on battery" not in devices[device] or on_battery != devices[device]["on battery"]:
+				do_panic = True
+				panic_state = line
+			if device not in devices:
+				devices[device] = {}
+			devices[device]["on battery"] = on_battery
+		elif b"lid-is-closed:" in line:
+			lid_is_closed = b"yes\n" == line.split(b" ")[-1]
+			if device not in devices or "lid closed" not in devices[device] or lid_is_closed != devices[device]["lid closed"]:
+				do_panic = True
+				panic_state = line
+			if device not in devices:
+				devices[device] = {}
+			devices[device]["lid closed"] = lid_is_closed
+		elif b"online:" in line:
+			online = b"yes\n" == line.split(b" ")[-1]
+			if device not in devices or "online" not in devices[device] or online != devices[device]["online"]:
+				do_panic = True
+				panic_state = line
+			if device not in devices:
+				devices[device] = {}
+			devices[device]["online"] = online
+		if do_panic:
+			panic(device, panic_state)
+except KeyboardInterrupt:
+	print("Caught ctrl+c, quitting...")
+except SystemExit:
+	print("Caught exit signal, quitting...")
+except e:
+	raise e
+p.terminate()
+if log != None:
+	write(log, "%s\nqpowerkill: gracefully shutting down @ %s\n" %("-" * 64, datetime.now().isoformat()))
+	log.close()

@@ -1,0 +1,12 @@
+[Unit]
+Description=Qubes PowerKill panic script
+
+[Service]
+Type=exec
+User=root
+ExecStart=/usr/bin/qpowerkill
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+RequiredBy=multi-user.target

@@ -1,0 +1,16 @@
+#!/bin/bash
+
+if [[ "$UID" != 0 ]]; then
+	sudo "$0" "$@"
+	exit
+fi
+
+for arg in "$@"; do
+	if [[ "$arg" == "log" ]]; then
+		less /var/log/qpowerkill.log
+	elif [[ "$arg" == "rm-log" ]]; then
+		rm /var/log/qpowerkill.log
+	else
+		systemctl "$arg" qpowerkill
+	fi
+done
